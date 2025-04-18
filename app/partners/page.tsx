@@ -9,7 +9,7 @@ export default function PartnersPage() {
       category: "Educational Institutions",
       entities: [
         { name: "Sanskriti University", location: "Mathura, Uttar Pradesh", logo: "/sanskritiuniversity.ico" },
-        { name: "World University of Design", location: "Sonipat, Haryana", logo: "/wud.png" },
+        //{ name: "World University of Design", location: "Sonipat, Haryana", logo: "/wud.png" },
         {
           name: "RIMT University",
           location: "Mandi, Punjab",
