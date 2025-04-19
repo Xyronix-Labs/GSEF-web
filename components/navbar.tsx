@@ -66,7 +66,9 @@ const Navbar = () => {
             ))}
             <Button variant="outline" className="ml-4">
               <User className="h-4 w-4 mr-2" />
-              <span>Sign In</span>
+              <Link href="/signin" className="text-white">
+                Sign In
+              </Link>
             </Button>
           </div>
 
