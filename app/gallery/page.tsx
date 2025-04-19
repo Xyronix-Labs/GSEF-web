@@ -90,7 +90,7 @@ export default function GalleryPage() {
   
   // Manually loop through each of the 182 images using your file naming pattern.
   const eventImagesManual: { id: number; src: string; alt: string }[] = [];
-  for (let i = 1; i <= 182; i++) {
+  for (let i = 1; i <= 179; i++) {
     eventImagesManual.push({
       id: i,
       src: encodeURI(`/gallery/1 (${i}).JPG`),
@@ -106,6 +106,7 @@ export default function GalleryPage() {
   return (
     <div className="bg-gradient-to-b from-black to-gray-900 min-h-screen pt-24 pb-20">
       <div className="container mx-auto px-4">
+        {/* 
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">Gallery</h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
@@ -135,10 +136,10 @@ export default function GalleryPage() {
             <Link href="/about-us">Learn More About Our Initiative</Link>
           </Button>
         </div>
-  
+        */}
         {/* New Section for INDIA-AFRICA SCHOLARSHIP AWARDS */}
-        <div className="mt-24 text-center">
-          <h2 className="text-3xl font-bold text-white mb-6">India-Africa Scholarship Awards 2025</h2>
+        <div className="mt-8 text-center">
+          <h2 className="text-4xl font-bold text-white mb-6">India-Africa Scholarship Awards 2025</h2>
           <p className="text-lg text-gray-300 mb-8">
             A special event showcasing the achievements and partnerships in education.
           </p>

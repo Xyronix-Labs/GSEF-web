@@ -26,12 +26,12 @@ const Navbar = () => {
   }, [])
 
   const navigation = [
+    { name: "About", href: "/about-us" },
+    { name: "Vision", href: "/vision" },
+    { name: "Partners", href: "/partners" },
+    { name: "Scholarships", href: "/scholarships" },
     { name: "Gallery", href: "/gallery" },
     { name: "News", href: "/news" },
-    { name: "About Us", href: "/about-us" },
-    { name: "Vision", href: "/vision" },
-    { name: "Scholarships", href: "/scholarships" },
-    { name: "Partners", href: "/partners" },
   ]
 
   return (
@@ -45,7 +45,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
             <img
-                src="/BPI.png" // Replace with the actual path to your logo
+                src="/BPI.png" 
                 alt="Logo"
                 className="h-14 w-16" // Adjust height and width as needed
               />
