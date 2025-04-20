@@ -257,3 +257,38 @@ export async function submitApplication(formData: FormData) {
 
   
 }}
+
+async function sendToDjangoBackend(formData: FormData, requestId: string) {
+  try {
+    console.log(`[${requestId}] Sending form data to Django backend...`);
+
+    const response = await fetch("http://localhost:8000/api/scholarship-form/", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error(`[${requestId}] Django backend error:`, errorData);
+      return {
+        success: false,
+        message: errorData.error || "Failed to submit the application to the backend.",
+      };
+    }
+
+    const result = await response.json();
+    console.log(`[${requestId}] Application submitted successfully to Django backend with ID: ${result._id}`);
+
+    return {
+      success: true,
+      backendId: result._id,
+      message: "Application submitted successfully to the backend!",
+    };
+  } catch (error) {
+    console.error(`[${requestId}] Error communicating with Django backend:`, error);
+    return {
+      success: false,
+      message: "An error occurred while submitting the application to the backend.",
+    };
+  }
+}
