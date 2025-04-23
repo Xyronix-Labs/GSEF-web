@@ -1,8 +1,8 @@
+# server/api/urls.py
 from django.urls import path
-from .views import ItemAPI
+from .views import ScholarshipFormAPI, ApplicationStatusAPI
 
 urlpatterns = [
-    path("items/", ItemAPI.as_view(), name="item-list-create"),
-    path("items/<str:pk>/", ItemAPI.as_view(), name="item-detail"),
     path("scholarship-form/", ScholarshipFormAPI.as_view(), name="scholarship-form"),
+    path("check-status/", ApplicationStatusAPI.as_view(), name="check-status"),
 ]

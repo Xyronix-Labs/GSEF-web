@@ -114,58 +114,56 @@ export default function ApplyPage() {
    * Processes form data and submits to the server
    */
   const onSubmit = async (data: ApplicationFormData) => {
-    setIsSubmitting(true)
-    setErrorMessage(null)
-
+    setIsSubmitting(true);
+    setErrorMessage(null);
+  
     try {
       // Create a FormData object to handle file uploads
-      const formData = new FormData(formRef.current!)
-
+      const formData = new FormData(formRef.current!);
+  
       // Add form data that might not be captured by the form element
       Object.entries(data).forEach(([key, value]) => {
-        // Skip file inputs as they're already in the FormData
         if (key !== "documents" && value !== undefined) {
           if (Array.isArray(value)) {
-            // Handle arrays
-            formData.append(key, JSON.stringify(value))
+            formData.append(key, JSON.stringify(value)); // Handle arrays
           } else if (typeof value === "object" && value !== null) {
-            // Handle objects
-            formData.append(key, JSON.stringify(value))
+            formData.append(key, JSON.stringify(value)); // Handle objects
           } else {
-            // Handle primitive values
-            formData.append(key, String(value))
+            formData.append(key, String(value)); // Handle primitive values
           }
         }
-      })
-
-      // Submit the form data to the server action
-      const result = await submitApplication(formData)
-
+      });
+  
+      // Submit the form data to the server
+      const result = await submitApplication(formData);
+  
       if (result.success) {
-        setApplicationId(result.applicationId || "")
-        setFormSubmitted(true)
-        window.scrollTo(0, 0)
-
+        setApplicationId(result.applicationId || "");
+        setFormSubmitted(true);
+        window.scrollTo(0, 0);
+  
         // Store application ID in localStorage for reference
         try {
-          localStorage.setItem("lastApplicationId", result.applicationId || "")
+          localStorage.setItem("lastApplicationId", result.applicationId || "");
         } catch (e) {
           // Ignore localStorage errors
         }
       } else {
-        setErrorMessage(result.message || "Failed to submit application")
-        setShowErrorDialog(true)
+        setErrorMessage(result.message || "Failed to submit application");
+        setShowErrorDialog(true);
       }
     } catch (error) {
-      console.error("Error submitting form:", error)
+      console.error("Error submitting form:", error);
       setErrorMessage(
-        error instanceof Error ? `Error: ${error.message}` : "An unexpected error occurred. Please try again.",
-      )
-      setShowErrorDialog(true)
+        error instanceof Error
+          ? `Error: ${error.message}`
+          : "An unexpected error occurred. Please try again."
+      );
+      setShowErrorDialog(true);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   /**
    * Validates the current step and proceeds to the next if valid
@@ -623,7 +621,7 @@ export default function ApplyPage() {
 
                 <div>
                   <label htmlFor="fatherMobile" className="block text-white font-medium mb-2">
-                    Mobile Number of Father/Guardian <span className="text-red-500">*</span>
+                    Mobile Number of Father <span className="text-red-500">*</span>
                   </label>
                   <Input
                     id="fatherMobile"
@@ -637,7 +635,7 @@ export default function ApplyPage() {
 
                 <div>
                   <label htmlFor="motherMobile" className="block text-white font-medium mb-2">
-                    Mobile Number of Mother/Guardian
+                    Mobile Number of Mother
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

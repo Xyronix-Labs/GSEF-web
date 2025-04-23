@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import clientPromise from "@/app/lib/mongodb"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,37 +11,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Connect to MongoDB
-    const client = await clientPromise
-    const db = client.db("indo_african_scholarships")
-
-    // Find the application
-    const application = await db.collection("applications").findOne({
-      applicationId,
-      $or: [{ studentMobile: contactNumber }, { fatherMobile: contactNumber }, { motherMobile: contactNumber }],
+    // Forward the request to Django backend
+    const response = await fetch("http://localhost:8000/api/check-status/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ applicationId, contactNumber }),
     })
 
-    if (!application) {
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: `HTTP Error: ${response.status} ${response.statusText}` };
+      }
+      
       return NextResponse.json(
-        { success: false, message: "No application found with the provided details" },
-        { status: 404 },
+        { success: false, message: errorData.message || "Failed to check application status" },
+        { status: response.status },
       )
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        applicationId: application.applicationId,
-        name: `${application.firstName} ${application.lastName}`,
-        status: application.status,
-        programType: application.programType,
-        firstPreference: application.firstPreference,
-        submittedAt: application.submittedAt,
-      },
-    })
+    const result = await response.json()
+    return NextResponse.json(result)
   } catch (error) {
     console.error("Error checking application status:", error)
     return NextResponse.json({ success: false, message: "Failed to check application status" }, { status: 500 })
   }
 }
-

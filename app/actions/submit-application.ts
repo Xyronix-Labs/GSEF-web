@@ -1,18 +1,14 @@
 "use server"
 
 import { applicationSchema } from "@/app/lib/schemas/application-schema"
-import clientPromise from "@/app/lib/mongodb"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { cookies, headers } from "next/headers"
 import crypto from "crypto"
 import { sanitizeInput, maskSensitiveData, validateFile } from "@/app/lib/utils/form-security"
-import { handleMongoDBError } from "@/app/lib/utils/db-error-handler"
-import { logDatabaseOperation } from "@/app/lib/utils/db-error-handler"
-import { rateLimit, checkSubmissionFrequency } from "@/app/lib/utils/rate-limiter"
 
 /**
- * Server action to submit application form data to MongoDB
+ * Server action to submit application form data to Django backend
  * Handles form submission, validation, and database storage
  *
  * @param formData - The form data from the client
@@ -28,24 +24,6 @@ export async function submitApplication(formData: FormData) {
     // Get client IP for rate limiting
     const headersList = await headers()
     const ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "unknown"
-
-    // Check rate limiting
-    if (!rateLimit(ip)) {
-      console.log(`[${requestId}] Rate limit exceeded for IP: ${ip}`)
-      return {
-        success: false,
-        message: "Too many requests. Please try again later.",
-      }
-    }
-
-    // Check submission frequency
-    if (!checkSubmissionFrequency()) {
-      console.log(`[${requestId}] Submission frequency limit exceeded`)
-      return {
-        success: false,
-        message: "You have recently submitted an application. Please wait before submitting another one.",
-      }
-    }
 
     // Convert FormData to a plain object
     const rawFormData: Record<string, any> = {}
@@ -170,125 +148,106 @@ export async function submitApplication(formData: FormData) {
       throw error
     }
 
-    console.log(`[${requestId}] Validation successful, connecting to MongoDB...`)
+    console.log(`[${requestId}] Validation successful, sending to Django API...`)
 
-    // Connect to MongoDB with error handling
-    let client
-    try {
-      client = await clientPromise
-    } catch (error) {
-      console.error(`[${requestId}] MongoDB connection error:`, error)
-      return {
-        success: false,
-        message: handleMongoDBError(error),
-      }
-    }
-
-    const db = client.db("indo_african_scholarships")
-
-    // Generate a unique application ID with proper format
-    const year = new Date().getFullYear()
-    const randomPart = Math.floor(10000 + Math.random() * 90000)
-    const applicationId = `IAF-${year}-${randomPart}`
-
-    console.log(`[${requestId}] Generated application ID: ${applicationId}`)
-
-    // Prepare the document to be inserted
-    const applicationDocument = {
+    // Add metadata for security and auditing
+    const applicationData = {
       ...validatedData,
-      applicationId,
-      status: "Pending",
-      submittedAt: new Date(),
-      // Add metadata for security and auditing
       metadata: {
         ipAddress: ip,
         userAgent: (await headersList).get("user-agent") || "unknown",
         submissionId: requestId,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
       },
     }
 
-    // Insert the application into MongoDB with error handling
-    try {
-      const result = await db.collection("applications").insertOne(applicationDocument)
-      console.log(`[${requestId}] Application inserted successfully with ID: ${result.insertedId}`)
-
-        logDatabaseOperation(
-          "INSERT",
-          "applications",
-          {
-            applicationId,
-            mongoId: result.insertedId.toString(),
-            timestamp: new Date().toISOString(),
-          }
-        )
-      } catch (error) {
-        console.error(`[${crypto.randomUUID()}] MongoDB insertion error:`, error)
-        return {
-          success: false,
-          message: handleMongoDBError(error),
-        }
-      }
-
-      // Store the application ID in a cookie for reference
-      (await cookies()).set("lastApplicationId", applicationId, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-        path: "/",
-        sameSite: "strict",
-      })
-
-      // Revalidate the path to update any cached data
-      revalidatePath("/apply")
-
-      return {
-        success: true,
-        applicationId,
-        message: "Application submitted successfully!",
-      }
-    } catch (error) {
-      console.error(`[${requestId}] MongoDB insertion error:`, error)
+    // Send to Django backend
+    const djangoResult = await sendToDjangoBackend(applicationData, requestId)
+    
+    if (!djangoResult.success) {
+      console.error(`[${requestId}] Failed to save application to Django backend:`, djangoResult.message)
       return {
         success: false,
-        message: handleMongoDBError(error),
+        message: djangoResult.message || "Failed to submit application. Please try again.",
       }
-  console.error("Error submitting application:", error)
+    }
 
-  
-}}
+    console.log(`[${requestId}] Application successfully saved to Django backend with ID: ${djangoResult.applicationId}`);
 
-async function sendToDjangoBackend(formData: FormData, requestId: string) {
+    // Store the application ID in a cookie for reference
+    (await cookies()).set("lastApplicationId", djangoResult.applicationId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: "/",
+      sameSite: "strict",
+    })
+
+    // Revalidate the path to update any cached data
+    revalidatePath("/apply")
+
+    return {
+      success: true,
+      applicationId: djangoResult.applicationId,
+      message: "Application submitted successfully!",
+    }
+  } catch (error) {
+    console.error(`[${requestId}] Error submitting application:`, error)
+    return {
+      success: false,
+      message: "An error occurred while processing your application. Please try again.",
+    }
+  }
+}
+
+/**
+ * Sends the application data to the Django backend
+ * 
+ * @param applicationData - The application data to send
+ * @param requestId - The request ID for tracking
+ * @returns Object with success status and message
+ */
+async function sendToDjangoBackend(applicationData: any, requestId: string) {
   try {
-    console.log(`[${requestId}] Sending form data to Django backend...`);
+    console.log(`[${requestId}] Sending application data to Django backend...`);
 
+    // Create a JSON payload for Django
     const response = await fetch("http://localhost:8000/api/scholarship-form/", {
       method: "POST",
-      body: formData,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(applicationData),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { error: `HTTP Error: ${response.status} ${response.statusText}` };
+      }
+      
       console.error(`[${requestId}] Django backend error:`, errorData);
       return {
         success: false,
-        message: errorData.error || "Failed to submit the application to the backend.",
+        message: errorData.error || "Failed to submit the application to the Django backend.",
       };
     }
 
     const result = await response.json();
-    console.log(`[${requestId}] Application submitted successfully to Django backend with ID: ${result._id}`);
+    console.log(`[${requestId}] Application submitted successfully to Django backend with ID: ${result.application_id}`);
 
     return {
       success: true,
-      backendId: result._id,
+      applicationId: result.application_id,
       message: "Application submitted successfully to the backend!",
     };
   } catch (error) {
     console.error(`[${requestId}] Error communicating with Django backend:`, error);
     return {
       success: false,
-      message: "An error occurred while submitting the application to the backend.",
+      message: "An error occurred while submitting the application to the Django backend.",
     };
   }
 }
