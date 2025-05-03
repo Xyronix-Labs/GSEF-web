@@ -29,15 +29,15 @@ async function isApplicationIdUnique(applicationId: string): Promise<boolean> {
 	const { data, error } = await supabase
 		.from("scholarship_applications")
 		.select("application_id")
-		.eq("application_id", applicationId)
-		.single();
+		.eq("application_id", applicationId);
 
 	if (error) {
 		console.error("Error checking application ID:", error);
 		return false;
 	}
 
-	return !data;
+	// If no rows are found, the ID is unique
+	return data.length === 0;
 }
 
 /**
@@ -64,36 +64,72 @@ async function uploadFileToStorage(
 	documentType: string
 ): Promise<string | null> {
 	try {
+		console.log(
+			`Attempting to upload file: ${file.name} for document type: ${documentType}`
+		);
+
 		const fileExt = file.name.split(".").pop();
 		const fileName = `${applicationId}/${documentType}.${fileExt}`;
-		const filePath = `scholarship-documents/${fileName}`;
+		const filePath = `applications/${fileName}`; // Changed bucket path
+
+		console.log(`Uploading to path: ${filePath}`);
 
 		const { data, error } = await supabase.storage
-			.from("scholarship-documents")
+			.from("applications") // Changed bucket name
 			.upload(filePath, file, {
 				cacheControl: "3600",
-				upsert: false,
+				upsert: true,
 			});
 
 		if (error) {
 			console.error("Error uploading file:", error);
-			return null;
+			throw new Error(`Failed to upload ${documentType}: ${error.message}`);
 		}
+
+		console.log(`File uploaded successfully, getting public URL`);
 
 		// Get the public URL
 		const {
 			data: { publicUrl },
-		} = supabase.storage.from("scholarship-documents").getPublicUrl(filePath);
+		} = supabase.storage.from("applications").getPublicUrl(filePath);
+
+		console.log(`Public URL generated: ${publicUrl}`);
 
 		return publicUrl;
 	} catch (error) {
 		console.error("Error in uploadFileToStorage:", error);
-		return null;
+		throw error;
 	}
 }
 
 /**
- * Server action to submit application form data to Django backend
+ * Converts camelCase to snake_case
+ */
+function camelToSnakeCase(str: string): string {
+	return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
+
+/**
+ * Transforms an object's keys from camelCase to snake_case
+ */
+function transformKeysToSnakeCase(obj: any): any {
+	if (Array.isArray(obj)) {
+		return obj.map((item) => transformKeysToSnakeCase(item));
+	}
+
+	if (obj !== null && typeof obj === "object") {
+		return Object.keys(obj).reduce((result, key) => {
+			const snakeKey = camelToSnakeCase(key);
+			result[snakeKey] = transformKeysToSnakeCase(obj[key]);
+			return result;
+		}, {} as any);
+	}
+
+	return obj;
+}
+
+/**
+ * Server action to submit application form data to Supabase
  * Handles form submission, validation, and database storage
  *
  * @param formData - The form data from the client
@@ -112,6 +148,10 @@ export async function submitApplication(formData: FormData) {
 			headersList.get("x-forwarded-for") ||
 			headersList.get("x-real-ip") ||
 			"unknown";
+
+		// Generate unique application ID first
+		const applicationId = await generateUniqueApplicationId();
+		console.log(`[${requestId}] Generated application ID: ${applicationId}`);
 
 		// Convert FormData to a plain object
 		const rawFormData: Record<string, any> = {};
@@ -178,28 +218,57 @@ export async function submitApplication(formData: FormData) {
 							);
 						}
 
-						// Upload file to Supabase Storage
-						const uploadPromise = uploadFileToStorage(
-							value,
-							applicationId,
-							documentKey
-						).then((url) => {
-							if (url) {
-								rawFormData.documents[documentKey] = url;
-							}
-						});
-
 						rawFormData.documents[documentKey] = {
 							name: value.name,
 							type: value.type,
 							size: value.size,
 							lastModified: value.lastModified,
+							file: value, // Store the actual file for later upload
 						};
 					}
 				} else {
 					// Handle regular fields
-					// For checkbox values, convert "on" to true
-					if (value === "on") {
+					if (key === "studentDeclaration" || key === "parentDeclaration") {
+						// Convert declaration checkboxes to boolean
+						rawFormData[key] = value === "on" || value === "true";
+					} else if (key === "siblings") {
+						// Handle siblings array
+						if (typeof value === "string") {
+							const siblingNames = value
+								.split(",")
+								.map((item) => item.trim())
+								.filter(Boolean);
+							rawFormData[key] = siblingNames.map((name) => ({
+								name: name,
+								age: null,
+								occupation: null,
+								relation: "Brother", // Using proper enum value
+								education: null,
+								maritalStatus: null,
+							}));
+						} else {
+							rawFormData[key] = value;
+						}
+					} else if (key === "entranceTests") {
+						// Handle entrance tests array
+						if (typeof value === "string") {
+							const testNames = value
+								.split(",")
+								.map((item) => item.trim())
+								.filter(Boolean);
+							rawFormData[key] = testNames.map((name) => ({
+								name: name,
+								conductedBy: "N/A", // Required field
+								year: new Date().getFullYear().toString(), // Convert to string
+								marksRank: "N/A", // Required field
+								score: null,
+								date: null,
+							}));
+						} else {
+							rawFormData[key] = value;
+						}
+					} else if (value === "on") {
+						// For other checkbox values, convert "on" to true
 						rawFormData[key] = true;
 					} else if (typeof value === "string") {
 						// Sanitize string inputs
@@ -229,6 +298,61 @@ export async function submitApplication(formData: FormData) {
 			rawFormData.parentDeclaration = false;
 		}
 
+		// Ensure arrays are properly initialized with correct structure
+		if (!Array.isArray(rawFormData.siblings)) {
+			rawFormData.siblings = [];
+		} else {
+			// Ensure each sibling has the required object structure
+			rawFormData.siblings = rawFormData.siblings.map((sibling) => {
+				if (typeof sibling === "string") {
+					return {
+						name: sibling,
+						age: null,
+						occupation: null,
+						relation: "Brother", // Using proper enum value
+						education: null,
+						maritalStatus: null,
+					};
+				}
+				// Ensure all required fields exist
+				return {
+					name: sibling.name || "",
+					age: sibling.age || null,
+					occupation: sibling.occupation || null,
+					relation: sibling.relation === "Sister" ? "Sister" : "Brother", // Ensure valid enum value
+					education: sibling.education || null,
+					maritalStatus: sibling.maritalStatus || null,
+				};
+			});
+		}
+
+		if (!Array.isArray(rawFormData.entranceTests)) {
+			rawFormData.entranceTests = [];
+		} else {
+			// Ensure each entrance test has the required object structure
+			rawFormData.entranceTests = rawFormData.entranceTests.map((test) => {
+				if (typeof test === "string") {
+					return {
+						name: test,
+						conductedBy: "N/A",
+						year: new Date().getFullYear().toString(), // Convert to string
+						marksRank: "N/A",
+						score: null,
+						date: null,
+					};
+				}
+				// Ensure all required fields exist
+				return {
+					name: test.name || "",
+					conductedBy: test.conductedBy || "N/A",
+					year: (test.year || new Date().getFullYear()).toString(), // Ensure string type
+					marksRank: test.marksRank || "N/A",
+					score: test.score || null,
+					date: test.date || null,
+				};
+			});
+		}
+
 		console.log(`[${requestId}] Form data processed, validating...`);
 
 		// Log sanitized data for debugging (mask sensitive data)
@@ -255,45 +379,91 @@ export async function submitApplication(formData: FormData) {
 			throw error;
 		}
 
-		console.log(
-			`[${requestId}] Validation successful, sending to Django API...`
-		);
+		console.log(`[${requestId}] Validation successful, uploading files...`);
 
-		// Generate unique application ID
-		const applicationId = await generateUniqueApplicationId();
+		// Upload files if present
+		if (rawFormData.documents) {
+			console.log(`[${requestId}] Starting file uploads...`);
+			const uploadPromises = Object.entries(rawFormData.documents).map(
+				async ([documentKey, documentData]) => {
+					if (documentData.file) {
+						console.log(`[${requestId}] Uploading ${documentKey}...`);
+						try {
+							const url = await uploadFileToStorage(
+								documentData.file,
+								applicationId,
+								documentKey
+							);
+							if (url) {
+								console.log(
+									`[${requestId}] Successfully uploaded ${documentKey}`
+								);
+								rawFormData.documents[documentKey] = url;
+							} else {
+								throw new Error(`Failed to get URL for ${documentKey}`);
+							}
+						} catch (error) {
+							console.error(
+								`[${requestId}] Error uploading ${documentKey}:`,
+								error
+							);
+							throw error;
+						}
+					} else {
+						console.log(`[${requestId}] No file found for ${documentKey}`);
+					}
+				}
+			);
 
-		// Add metadata, application ID, and document URLs
-		const applicationData = {
+			try {
+				console.log(`[${requestId}] Waiting for all uploads to complete...`);
+				await Promise.all(uploadPromises);
+				console.log(`[${requestId}] All files uploaded successfully`);
+			} catch (error) {
+				console.error(`[${requestId}] Error during file uploads:`, error);
+				return {
+					success: false,
+					message:
+						error instanceof Error
+							? `Failed to upload documents: ${error.message}`
+							: "Failed to upload documents. Please try again.",
+				};
+			}
+		} else {
+			console.log(`[${requestId}] No documents to upload`);
+		}
+
+		// Prepare application data for Supabase
+		const applicationData = transformKeysToSnakeCase({
 			...validatedData,
 			application_id: applicationId,
 			documents: rawFormData.documents,
+			status: "Pending", // Changed from 'pending' to 'Pending' to match enum
+			submitted_at: new Date().toISOString(),
 			metadata: {
 				ipAddress: ip,
-				userAgent: (await headersList).get("user-agent") || "unknown",
+				userAgent: headersList.get("user-agent") || "unknown",
 				submissionId: requestId,
 				createdAt: new Date().toISOString(),
 			},
-		};
+		});
 
-		// Send to Django backend
-		const djangoResult = await sendToDjangoBackend(applicationData, requestId);
+		console.log(`[${requestId}] Prepared data for Supabase:`, applicationData);
 
-		if (!djangoResult.success) {
-			console.error(
-				`[${requestId}] Failed to save application to Django backend:`,
-				djangoResult.message
-			);
+		// Save to Supabase
+		const { data, error } = await supabase
+			.from("scholarship_applications")
+			.insert([applicationData])
+			.select()
+			.single();
+
+		if (error) {
+			console.error(`[${requestId}] Supabase error:`, error.message);
 			return {
 				success: false,
-				message:
-					djangoResult.message ||
-					"Failed to submit application. Please try again.",
+				message: "Failed to save application. Please try again.",
 			};
 		}
-
-		console.log(
-			`[${requestId}] Application successfully saved to Django backend with ID: ${djangoResult.applicationId}`
-		);
 
 		// Store the application ID in a cookie for reference
 		(await cookies()).set("lastApplicationId", applicationId, {
@@ -306,84 +476,6 @@ export async function submitApplication(formData: FormData) {
 
 		// Revalidate the path to update any cached data
 		revalidatePath("/apply");
-
-		// After validation and before returning success:
-		const { data, error } = await supabase
-			.from("scholarship_applications")
-			.insert([
-				{
-					...applicationData,
-					// Ensure all fields from the schema are included
-					firstName: applicationData.firstName,
-					lastName: applicationData.lastName,
-					fatherName: applicationData.fatherName,
-					motherName: applicationData.motherName,
-					dob: applicationData.dob,
-					sex: applicationData.sex,
-					bloodGroup: applicationData.bloodGroup,
-					passportNumber: applicationData.passportNumber,
-					govtIdNumber: applicationData.govtIdNumber,
-					nationality: applicationData.nationality,
-					state: applicationData.state,
-					city: applicationData.city,
-					district: applicationData.district,
-					pincode: applicationData.pincode,
-					residentialAddress: applicationData.residentialAddress,
-					secondaryAddress: applicationData.secondaryAddress,
-					studentMobile: applicationData.studentMobile,
-					fatherMobile: applicationData.fatherMobile,
-					motherMobile: applicationData.motherMobile,
-					studentEmail: applicationData.studentEmail,
-					parentEmail: applicationData.parentEmail,
-					fatherOccupation: applicationData.fatherOccupation,
-					motherOccupation: applicationData.motherOccupation,
-					fatherIncome: applicationData.fatherIncome,
-					fatherIncomeCurrency: applicationData.fatherIncomeCurrency,
-					motherIncome: applicationData.motherIncome,
-					motherIncomeCurrency: applicationData.motherIncomeCurrency,
-					siblings: applicationData.siblings,
-					currentlyEnrolled: applicationData.currentlyEnrolled,
-					currentInstitution: applicationData.currentInstitution,
-					entranceTests: applicationData.entranceTests,
-					tenthScore: applicationData.tenthScore,
-					tenthSubjects: applicationData.tenthSubjects,
-					tenthBoard: applicationData.tenthBoard,
-					tenthYear: applicationData.tenthYear,
-					twelfthScore: applicationData.twelfthScore,
-					twelfthSubjects: applicationData.twelfthSubjects,
-					twelfthBoard: applicationData.twelfthBoard,
-					twelfthYear: applicationData.twelfthYear,
-					graduationStream: applicationData.graduationStream,
-					graduationSubjects: applicationData.graduationSubjects,
-					graduationUniversity: applicationData.graduationUniversity,
-					graduationYear: applicationData.graduationYear,
-					pgStream: applicationData.pgStream,
-					pgSubjects: applicationData.pgSubjects,
-					pgUniversity: applicationData.pgUniversity,
-					pgYear: applicationData.pgYear,
-					ieltsScore: applicationData.ieltsScore,
-					ieltsYear: applicationData.ieltsYear,
-					programType: applicationData.programType,
-					firstPreference: applicationData.firstPreference,
-					secondPreference: applicationData.secondPreference,
-					thirdPreference: applicationData.thirdPreference,
-					hostelRequired: applicationData.hostelRequired,
-					studentDeclaration: applicationData.studentDeclaration,
-					parentDeclaration: applicationData.parentDeclaration,
-					documents: applicationData.documents,
-					status: applicationData.status,
-					submittedAt: applicationData.submittedAt,
-					metadata: applicationData.metadata,
-				},
-			]);
-
-		if (error) {
-			console.error(`[${requestId}] Supabase error:`, error.message);
-			return {
-				success: false,
-				message: "Failed to save application to Supabase.",
-			};
-		}
 
 		return {
 			success: true,

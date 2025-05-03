@@ -92,22 +92,96 @@ export default function ApplyPage() {
 	} = useForm<ApplicationFormData>({
 		resolver: zodResolver(applicationSchema),
 		defaultValues: {
-			programType:
-				(programType as
-					| "Skill Courses"
-					| "Diploma"
-					| "Undergraduate Degree"
-					| "Postgraduate Degree"
-					| "Doctoral Program") || "Undergraduate Degree",
+			// Program Information
+			programType: "Undergraduate Degree",
+			firstPreference: "Computer Science Engineering",
+			secondPreference: "Information Technology",
+			thirdPreference: "Electronics Engineering",
+			hostelRequired: "Yes",
+
+			// Personal Information
+			firstName: "John",
+			lastName: "Doe",
+			fatherName: "James Doe",
+			motherName: "Jane Doe",
+			dob: "2000-01-01",
+			sex: "Male",
+			bloodGroup: "O+",
+			passportNumber: "P123456789",
+			govtIdNumber: "A123456789",
+			nationality: "India",
+			state: "Delhi",
+			city: "New Delhi",
+			district: "Central Delhi",
+			pincode: "110001",
+			residentialAddress: "123 Main Street, New Delhi",
+			secondaryAddress: "456 Second Street, New Delhi",
+			studentMobile: "9876543210",
+			fatherMobile: "9876543211",
+			motherMobile: "9876543212",
+			studentEmail: "john.doe@example.com",
+			parentEmail: "parents@example.com",
+
+			// Family Information
+			fatherOccupation: "Business",
+			motherOccupation: "Teacher",
+			fatherIncome: "1000000",
+			motherIncome: "500000",
+			fatherIncomeCurrency: "INR",
+			motherIncomeCurrency: "INR",
+			siblings: [
+				{
+					relation: "Brother",
+					name: "Mike Doe",
+					school: "Delhi Public School",
+					class: "10th",
+				},
+			],
+
+			// Academic Information
+			currentlyEnrolled: "No",
+			tenthScore: "85",
+			tenthYear: "2018",
+			tenthSubjects: "Mathematics, Science, English, Social Studies",
+			tenthBoard: "CBSE",
+			twelfthScore: "90",
+			twelfthYear: "2020",
+			twelfthSubjects: "Physics, Chemistry, Mathematics, English",
+			twelfthBoard: "CBSE",
+			graduationStream: "Computer Science",
+			graduationYear: "2024",
+			graduationSubjects: "Data Structures, Algorithms, Database Systems",
+			graduationUniversity: "Delhi University",
+
+			// Entrance Tests
+			entranceTests: [
+				{
+					name: "JEE Main",
+					conductedBy: "NTA",
+					year: "2020",
+					marksRank: "AIR 1000",
+				},
+			],
+
+			// Documents and Declarations
+			studentDeclaration: true,
+			parentDeclaration: true,
+		},
+		mode: "onChange",
+		reValidateMode: "onChange",
+	});
+
+	// Add a function to clear default values
+	const clearDefaultValues = () => {
+		reset({
+			programType: "Undergraduate Degree",
 			hostelRequired: "Yes",
 			siblings: [],
 			entranceTests: [],
 			studentDeclaration: false,
 			parentDeclaration: false,
-		},
-		mode: "onChange",
-		reValidateMode: "onChange",
-	});
+		});
+	};
 
 	// Watch form values for conditional rendering
 	const watch = useWatch({ control });
@@ -200,8 +274,8 @@ export default function ApplyPage() {
 
 		try {
 			// Validate all fields before submission
-			const isValid = await validateForm();
-			if (!isValid) {
+			const validationResult = await validateForm();
+			if (!validationResult) {
 				console.error("Form validation failed. Current errors:", errors);
 				console.log(
 					"Form values at validation failure:",
@@ -234,23 +308,21 @@ export default function ApplyPage() {
 				return;
 			}
 
-			// Create a FormData object to handle file uploads
-			const formData = new FormData(formRef.current!);
-			console.log("FormData created");
+			// Create a FormData object
+			const formData = new FormData();
 
-			// Add form data that might not be captured by the form element
+			// Add all form fields to FormData
 			Object.entries(data).forEach(([key, value]) => {
-				if (key !== "documents" && value !== undefined) {
+				if (value !== undefined && value !== null) {
 					if (Array.isArray(value)) {
 						formData.append(key, JSON.stringify(value));
-					} else if (typeof value === "object" && value !== null) {
+					} else if (typeof value === "object") {
 						formData.append(key, JSON.stringify(value));
 					} else {
 						formData.append(key, String(value));
 					}
 				}
 			});
-			console.log("Form data added to FormData");
 
 			// Add uploaded files to FormData
 			Object.entries(uploadedFiles).forEach(([documentType, file]) => {
@@ -2641,10 +2713,17 @@ export default function ApplyPage() {
 					<h1 className='text-4xl md:text-5xl font-bold text-white mb-6'>
 						Scholarship Application
 					</h1>
-					<p className='text-xl text-gray-300 max-w-3xl mx-auto'>
+					<p className='text-xl text-gray-300 max-w-3xl mx-auto mb-4'>
 						Complete the application form below to apply for the Indo-African
 						Scholarship program.
 					</p>
+					<Button
+						onClick={clearDefaultValues}
+						variant='outline'
+						className='text-white border-white hover:bg-white/10'
+					>
+						Clear Default Values
+					</Button>
 				</div>
 
 				{!formSubmitted && (
@@ -2746,23 +2825,20 @@ export default function ApplyPage() {
 							e.preventDefault();
 							console.log("Form submit event triggered");
 							const formValues = getValues();
-							console.log("Form validation state:", {
-								isValid,
-								isDirty,
-								errors,
-								values: formValues,
-							});
 							console.log(
 								"Form values (JSON):",
 								JSON.stringify(formValues, null, 2)
 							);
 
 							// Validate form before submission
-							const isValid = await validateForm();
-							console.log("Pre-submission validation result:", isValid);
+							const validationResult = await validateForm();
+							console.log(
+								"Pre-submission validation result:",
+								validationResult
+							);
 
-							if (isValid) {
-								handleSubmit((data) => onSubmit(data))(e);
+							if (validationResult) {
+								handleSubmit(onSubmit)(e);
 							} else {
 								console.error("Form validation failed before submission");
 								setErrorMessage("Please fill in all required fields correctly");
