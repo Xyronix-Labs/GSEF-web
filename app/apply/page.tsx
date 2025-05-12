@@ -1523,7 +1523,7 @@ export default function ApplyPage() {
 
 							<div className='bg-gray-800/30 p-6 rounded-lg border border-gray-700 mb-6'>
 								<h3 className='text-xl font-bold text-white mb-4'>
-									10th Standard
+									O Level
 								</h3>
 								<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
 									<div>
@@ -1531,7 +1531,7 @@ export default function ApplyPage() {
 											htmlFor='tenthScore'
 											className='block text-white font-medium mb-2'
 										>
-											10th Standard Score (%){" "}
+											O Level Score (%){" "}
 											<span className='text-red-500'>*</span>
 										</label>
 										<Input
@@ -1623,7 +1623,7 @@ export default function ApplyPage() {
 
 							<div className='bg-gray-800/30 p-6 rounded-lg border border-gray-700 mb-6'>
 								<h3 className='text-xl font-bold text-white mb-4'>
-									12th Standard
+									A Level
 								</h3>
 								<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
 									<div>
@@ -1631,7 +1631,7 @@ export default function ApplyPage() {
 											htmlFor='twelfthScore'
 											className='block text-white font-medium mb-2'
 										>
-											12th Standard Score (%){" "}
+											A Level Score (%){" "}
 											<span className='text-red-500'>*</span>
 										</label>
 										<Input
@@ -2329,7 +2329,7 @@ export default function ApplyPage() {
 
 									<div>
 										<label className='block text-white font-medium mb-2'>
-											10th Standard Certificate & Marksheet{" "}
+											O Level Certificate & Marksheet{" "}
 											<span className='text-red-500'>*</span>
 										</label>
 										<div className='flex items-center justify-center w-full'>
@@ -2366,7 +2366,7 @@ export default function ApplyPage() {
 
 									<div>
 										<label className='block text-white font-medium mb-2'>
-											12th Standard Certificate & Marksheet{" "}
+											A Level Certificate & Marksheet{" "}
 											<span className='text-red-500'>*</span>
 										</label>
 										<div className='flex items-center justify-center w-full'>
