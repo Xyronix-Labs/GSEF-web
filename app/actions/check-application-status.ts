@@ -1,6 +1,6 @@
 "use server"
 
-import clientPromise from "@/app/lib/mongodb"
+
 import { z } from "zod"
 import { rateLimit } from "@/app/lib/utils/rate-limiter"
 import { sanitizeInput } from "@/app/lib/utils/form-security"
