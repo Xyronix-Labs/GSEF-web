@@ -134,7 +134,7 @@ export default function ApplyPage() {
 					relation: "Brother",
 					name: "Mike Doe",
 					school: "Delhi Public School",
-					class: "10th",
+					class: "O Level",
 				},
 			],
 

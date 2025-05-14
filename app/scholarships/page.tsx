@@ -476,7 +476,7 @@ export default function ScholarshipsPage() {
               <li className="flex items-start">
                 <CheckCircle className="h-6 w-6 text-brand-orange mr-3 mt-0.5" />
                 <span className="text-gray-300">
-                  Educational backgrounds & marks scored in 10th & 12th standard / Entrance Examination / Interview
+                  Educational backgrounds & marks scored in O Level & A Level standard / Entrance Examination / Interview
                   whichever deemed fit.
                 </span>
               </li>
@@ -610,7 +610,7 @@ export default function ScholarshipsPage() {
                   <li className="flex items-start">
                     <FileText className="h-5 w-5 text-brand-orange mr-2 mt-0.5" />
                     <span className="text-gray-300">
-                      Academic records (10th & 12th standard scores, subjects, board, year of passing)
+                      Academic records (O Level & A Level standard scores, subjects, board, year of passing)
                     </span>
                   </li>
                   <li className="flex items-start">

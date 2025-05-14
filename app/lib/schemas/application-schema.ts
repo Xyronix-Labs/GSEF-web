@@ -183,7 +183,7 @@ export const applicationSchema = z.object({
   // 10th Standard
   tenthScore: z
     .string()
-    .min(1, "10th score is required")
+    .min(1, "O Level score is required")
     .regex(/^[0-9.]+$/, "Please enter a valid score (numbers only)"),
 
   tenthSubjects: z.string().min(3, "Please enter at least one subject").max(200, "Subject list is too long"),
@@ -202,7 +202,7 @@ export const applicationSchema = z.object({
   // 12th Standard
   twelfthScore: z
     .string()
-    .min(1, "12th score is required")
+    .min(1, "A Level score is required")
     .regex(/^[0-9.]+$/, "Please enter a valid score (numbers only)"),
 
   twelfthSubjects: z.string().min(3, "Please enter at least one subject").max(200, "Subject list is too long"),
