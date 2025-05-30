@@ -81,16 +81,16 @@ const Footer = () => {
               <li className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-brand-orange" />
                 <Link
-                  href="mailto:indoafricascholarships@gmail.com"
+                  href="mailto:support@globalsoutheducationfund.com"
                   className="text-gray-400 hover:text-brand-orange transition-colors"
                 >
-                  indoafricascholarships@gmail.com
+                  support@globalsoutheducationfund.com
                 </Link>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-brand-orange" />
-                <Link href="tel:+911234567890" className="text-gray-400 hover:text-brand-orange transition-colors">
-                  +91 123 456 7890
+                <Link href="tel:+918384080627" className="text-gray-400 hover:text-brand-orange transition-colors">
+                  +91 8384080627
                 </Link>
               </li>
             </ul>

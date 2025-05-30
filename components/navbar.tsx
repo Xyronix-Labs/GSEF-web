@@ -64,9 +64,9 @@ const Navbar = () => {
                 {item.name}
               </Link>
             ))}
-            <Button variant="outline" className="ml-4">
+            <Button variant="outline" className="bg-blue text-white border border-white hover:border-orange-700 transition-colors">
               <User className="h-4 w-4 mr-2" />
-              <Link href="/signin" className="text-white">
+              <Link href="/scholarships/login" className="text-white">
                 Sign In
               </Link>
             </Button>
@@ -96,9 +96,11 @@ const Navbar = () => {
                 {item.name}
               </Link>
             ))}
-            <Button variant="outline" className="w-full mt-4">
+            <Button variant="outline" className="w-full mt-4 border-white hover:border-orange-700 transition-colors">
+              <link href="/scholarships/login" className="flex items-center text-white w-full">
               <LogIn className="h-4 w-4 mr-2" />
               <span>Sign In</span>
+              </link>
             </Button>
           </div>
         </div>
