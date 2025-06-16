@@ -58,6 +58,11 @@ export default function PartnersPage() {
           location: "Johannesburg, South Africa",
           logo: "/placeholder.svg?height=100&width=180",
         },
+        {
+          name: "Tecd Foundation",
+          location: "Johannesburg, South Africa",
+          logo: "/tecdfoundation.jpg",
+        },
       ],
     },
     {
