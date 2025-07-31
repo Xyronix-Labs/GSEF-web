@@ -159,8 +159,6 @@ export default function GalleryPage() {
 }
 */}
 
-
-
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
@@ -177,22 +175,33 @@ type GalleryItem = {
 export default function GalleryPage() {
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
 
-  // Dynamically generate images using a loop
-  const eventImagesManual: GalleryItem[] = [];
-  for (let i = 1; i <= 179; i++) {
-    eventImagesManual.push({
+  // GSUA Summit Images
+  const gsuaImages: GalleryItem[] = [];
+  for (let i = 1; i <= 72; i++) {
+    gsuaImages.push({
       id: i,
+      title: null,
+      description: null,
+      image: encodeURI(`/gallery2/1(${i}).jpg`),
+    });
+  }
+
+  // Indo-African Event Images
+  const indoImages: GalleryItem[] = [];
+  for (let i = 1; i <= 179; i++) {
+    indoImages.push({
+      id: 2000 + i,
       title: null,
       description: null,
       image: encodeURI(`/gallery/1 (${i}).JPG`),
     });
   }
 
-  // Array for videos
-  const videoItems: GalleryItem[] = [
-    { id: 180, title: null, description: null, video: "/gallery/v1.mp4" },
-    { id: 181, title: null, description: null, video: "/gallery/v2.mp4" },
-    { id: 182, title: null, description: null, video: "/gallery/v3.mp4" },
+  // Indo-African Videos
+  const indoVideos: GalleryItem[] = [
+    { id: 3001, title: null, description: null, video: "/gallery/v1.mp4" },
+    { id: 3002, title: null, description: null, video: "/gallery/v2.mp4" },
+    { id: 3003, title: null, description: null, video: "/gallery/v3.mp4" },
   ];
 
   const handleItemClick = (item: GalleryItem) => {
@@ -203,93 +212,118 @@ export default function GalleryPage() {
     setSelectedItem(null);
   };
 
+  // Component to render event block
+  const renderEvent = (
+    title: string,
+    subtitle: string,
+    heroImage: string,
+    videos: GalleryItem[],
+    images: GalleryItem[]
+  ) => (
+    <div className="mb-24">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative max-w-3xl mx-auto text-center mb-16"
+      >
+        <h3 className="text-purple-400 font-bold mb-4">{subtitle}</h3>
+        <h1 className="text-5xl font-extrabold mb-4">{title}</h1>
+        <p className="text-gray-400 text-lg">
+          Explore the highlights of our event through Media Gallery.
+        </p>
+
+        {/* Hero Image */}
+        <div className="relative w-full h-64 md:h-96 mb-8">
+          <Image
+            src={heroImage}
+            alt={title}
+            fill
+            className="object-cover rounded-lg shadow-lg"
+          />
+        </div>
+      </motion.div>
+
+      {/* Gallery Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Render Videos */}
+        {videos.map((item, index) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: (index + images.length) * 0.1 }}
+            className="cursor-pointer group"
+            onClick={() => handleItemClick(item)}
+          >
+            <Card className="overflow-hidden bg-gray-900/50 border-gray-800 group-hover:shadow-lg transition-shadow duration-300">
+              <div className="relative h-64">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                >
+                  <source src={item.video} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </Card>
+          </motion.div>
+        ))}
+
+        {/* Render Images */}
+        {images.map((item, index) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+            className="cursor-pointer group"
+            onClick={() => handleItemClick(item)}
+          >
+            <Card className="overflow-hidden bg-gray-900/50 border-gray-800 group-hover:shadow-lg transition-shadow duration-300">
+              <div className="relative h-64">
+                {item.image && (
+                  <Image
+                    src={item.image}
+                    alt={item.title || `Gallery Item ${item.id}`}
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105 duration-300"
+                  />
+                )}
+              </div>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen pt-24 pb-6 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white">
       <div className="container mx-auto px-4">
-        {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative max-w-3xl mx-auto text-center mb-16"
-        >
-          <h3 className="text-purple-400 font-bold mb-4">
-            Business Press India x AASGON Presents
-          </h3>
-          <h1 className="text-5xl font-extrabold mb-4">
-            Indo-African Scholarships Launch Event
-          </h1>
-          <p className="text-gray-400 text-lg">
-            Explore the highlights of our event through images and videos.
-          </p>
+        {/* GSUA Summit (no videos) */}
+        {renderEvent(
+          "GSUA Summit",
+          "House of Lord’s GSUA 25 Summit Honours & Awards International Icons & Personalities",
+          "/gallery2/hero.jpg",
+          [], // No GSUA videos
+          gsuaImages
+        )}
 
-          {/* Hero Image */}
-          <div className="relative w-full h-64 md:h-96 mb-8">
-            <Image
-              src="/gallery/1.jpg"
-              alt="Indo-African Scholarships Launch Event"
-              fill
-              className="object-cover rounded-lg shadow-lg"
-            />
-          </div>
-        </motion.div>
+        {/* Purple Divider */}
+        <div className="h-[10px] w-full bg-purple-600 mb-[20px]"></div>
 
-        {/* Gallery Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Render Videos */}
-          {videoItems.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: (index + eventImagesManual.length) * 0.1 }}
-              className="cursor-pointer group"
-              onClick={() => handleItemClick(item)}
-            >
-              <Card className="overflow-hidden bg-gray-900/50 border-gray-800 group-hover:shadow-lg transition-shadow duration-300">
-                <div className="relative h-64">
-                  {item.video && (
-                    <video
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
-                    >
-                      <source src={item.video} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  )}
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-          {/* Render Images */}
-          {eventImagesManual.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="cursor-pointer group"
-              onClick={() => handleItemClick(item)}
-            >
-              <Card className="overflow-hidden bg-gray-900/50 border-gray-800 group-hover:shadow-lg transition-shadow duration-300">
-                <div className="relative h-64">
-                  {item.image && (
-                    <Image
-                      src={item.image}
-                      alt={item.title || `Gallery Item ${item.id}`}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105 duration-300"
-                    />
-                  )}
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-
-        </div>
+        {/* Indo-African Scholarships Launch Event */}
+        {renderEvent(
+          "Indo-African Scholarships Launch Event",
+          "Business Press India x AASGON Presents",
+          "/gallery/1.jpg",
+          indoVideos,
+          indoImages
+        )}
       </div>
 
       {/* Lightbox Modal */}
@@ -321,20 +355,23 @@ export default function GalleryPage() {
                 />
               )}
               {selectedItem.image && (
-                <Image
-                  src={selectedItem.image}
-                  alt={selectedItem.title || `Gallery Item ${selectedItem.id}`}
-                  fill
-                  className="object-cover"
-                />
+                <div className="w-full h-full max-h-[110vh] flex justify-center items-center bg-black p-4">
+                  <Image
+                    src={selectedItem.image}
+                    alt={selectedItem.title || `Gallery Item ${selectedItem.id}`}
+                    fill
+                    className="object-contain rounded"
+                  />
+                </div>
               )}
+
             </div>
             <div className="p-6">
               <h3 className="text-2xl font-bold mb-2">
-                {selectedItem.title || null}
+                {selectedItem.title || ""}
               </h3>
               {selectedItem.description && (
-                <p className="text-gray-400">{selectedItem.description || null}</p>
+                <p className="text-gray-400">{selectedItem.description}</p>
               )}
             </div>
           </motion.div>
@@ -343,3 +380,5 @@ export default function GalleryPage() {
     </div>
   );
 }
+
+
