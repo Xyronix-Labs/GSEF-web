@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 export default function ScholarshipsPage() {
-  
+
   // Define the type for courses
   type Courses = {
     [field: string]: string[];
@@ -22,14 +22,14 @@ export default function ScholarshipsPage() {
     fields: string[];
     courses: Courses;
   };
-  
+
   const [expandedField, setExpandedField] = useState<string | null>(null);
 
   const toggleField = (field: string) => {
     setExpandedField((prev) => (prev === field ? null : field));
   };
 
-  const scholarshipPrograms: ScholarshipProgram[] =  [
+  const scholarshipPrograms: ScholarshipProgram[] = [
     {
       id: "undergraduate",
       title: "Undergraduate Programs",
@@ -408,7 +408,7 @@ export default function ScholarshipsPage() {
       },
     },
   ];
-  
+
 
   const faqs = [
     {
@@ -454,6 +454,7 @@ export default function ScholarshipsPage() {
   ]
 
   return (
+
     <div className="bg-gradient-to-b from-black to-gray-900 min-h-screen pt-24 pb-20">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
@@ -463,6 +464,38 @@ export default function ScholarshipsPage() {
             South, with preference to African Union Nations.
           </p>
         </div>
+
+        <div className="bg-gradient-to-b from-black to-gray-900 w-full min-h-[60vh] flex items-center justify-center px-4 py-12">
+  <Card className="bg-orange-600 text-white w-full max-w-3xl mx-auto shadow-xl border-none rounded-2xl">
+    <CardHeader className="text-center px-6 pt-8">
+      <CardTitle className="text-2xl md:text-3xl font-bold">
+        Important Announcement
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="text-center space-y-6 px-6 pb-10">
+      <p className="text-base md:text-lg leading-relaxed">
+        Since our server is currently <span className="font-semibold">down</span>, 
+        kindly send your application with all the required details 
+        in our form via email.
+      </p>
+      <p className="text-lg md:text-xl font-bold underline break-words">
+        support@globalsoutheducationfund.com
+      </p>
+      <p className="text-sm md:text-base text-white/90">
+        We apologize for the inconvenience and appreciate your patience.
+      </p>
+      <div className="mt-6">
+        <Link
+          href="mailto:support@globalsoutheducationfund.com"
+          className="inline-block px-6 py-3 md:px-8 md:py-4 bg-white text-orange-600 font-semibold rounded-lg shadow hover:bg-gray-100 transition"
+        >
+          Send Application via Email
+        </Link>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
 
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-white mb-8 text-center">How It Works</h2>
@@ -694,4 +727,3 @@ export default function ScholarshipsPage() {
     </div>
   )
 }
-
